@@ -1,239 +1,236 @@
+function toggleNav() {
+            const nav = document.getElementById('navSidebar');
+            const overlay = document.getElementById('navOverlay');
+            
+            nav.classList.toggle('show');
+            overlay.classList.toggle('show');
+        }
 
-        let selectedFiles = [];
-        
-        // Setup file input handler
-        document.getElementById('fileInput').addEventListener('change', handleFiles);
-        
-        // Setup drag and drop
-        const uploadArea = document.querySelector('.upload-area');
-        
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
-        
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
-        
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
-            if (files.length > 0) {
-                handleFileArray(files);
-            }
-        });
-        
-        function handleFiles(event) {
-            const files = Array.from(event.target.files);
-            handleFileArray(files);
-        }
-        
-        function handleFileArray(files) {
-            files.forEach(file => {
-                if (file.type.startsWith('image/')) {
-                    selectedFiles.push({
-                        file: file,
-                        id: Date.now() + Math.random()
-                    });
-                }
-            });
-            updatePreview();
-            updateFileCount();
-            updateConvertButton();
-        }
-        
-        function updatePreview() {
-            const previewGrid = document.getElementById('previewGrid');
-            previewGrid.innerHTML = '';
+        function closeNav() {
+            const nav = document.getElementById('navSidebar');
+            const overlay = document.getElementById('navOverlay');
             
-            selectedFiles.forEach((fileObj, index) => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const previewItem = document.createElement('div');
-                    previewItem.className = 'preview-item';
-                    previewItem.innerHTML = `
-                        <img src="${e.target.result}" alt="Preview ${index + 1}">
-                        <button class="remove-btn" onclick="removeFile(${fileObj.id})">×</button>
-                    `;
-                    previewGrid.appendChild(previewItem);
-                };
-                reader.readAsDataURL(fileObj.file);
-            });
+            nav.classList.remove('show');
+            overlay.classList.remove('show');
         }
-        
-        function updateFileCount() {
+
+        // Handle file input
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const files = e.target.files;
             const fileCount = document.getElementById('fileCount');
-            const count = selectedFiles.length;
-            if (count > 0) {
-                fileCount.textContent = `เลือกไฟล์แล้ว ${count} ไฟล์`;
-                fileCount.style.display = 'block';
+            const previewGrid = document.getElementById('previewGrid');
+            const convertBtn = document.getElementById('convertBtn');
+            
+            if (files.length > 0) {
+                fileCount.innerHTML = `<div class="alert alert-success"><i class="fa-solid fa-check-circle me-2"></i>เลือกไฟล์แล้ว ${files.length} ไฟล์</div>`;
+                convertBtn.disabled = false;
+                
+                // Clear previous previews
+                previewGrid.innerHTML = '';
+                
+                // Show file previews
+                Array.from(files).forEach((file, index) => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const div = document.createElement('div');
+                            div.className = 'col-md-3 col-sm-6 mb-3';
+                            div.innerHTML = `
+                                <div class="card h-100">
+                                    <div class="position-relative">
+                                        <img src="${e.target.result}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                                        <div class="position-absolute top-0 end-0 m-2">
+                                            <span class="badge bg-primary">${index + 1}</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body p-2">
+                                        <small class="text-muted d-block text-truncate" title="${file.name}">
+                                            <i class="fa-solid fa-image me-1"></i>${file.name}
+                                        </small>
+                                        <small class="text-success">
+                                            <i class="fa-solid fa-weight-scale me-1"></i>${(file.size / 1024 / 1024).toFixed(2)} MB
+                                        </small>
+                                    </div>
+                                </div>
+                            `;
+                            previewGrid.appendChild(div);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+                
+                previewGrid.className = 'row mt-3';
             } else {
-                fileCount.style.display = 'none';
+                fileCount.innerHTML = '';
+                previewGrid.innerHTML = '';
+                convertBtn.disabled = true;
             }
-        }
-        
-        function updateConvertButton() {
-            const convertBtn = document.getElementById('convertBtn');
-            convertBtn.disabled = selectedFiles.length === 0;
-        }
-        
-        function removeFile(id) {
-            selectedFiles = selectedFiles.filter(fileObj => fileObj.id !== id);
-            updatePreview();
-            updateFileCount();
-            updateConvertButton();
-        }
-        
+        });
+
+        // Clear all files
         function clearAll() {
-            selectedFiles = [];
             document.getElementById('fileInput').value = '';
-            updatePreview();
-            updateFileCount();
-            updateConvertButton();
+            document.getElementById('fileCount').innerHTML = '';
+            document.getElementById('previewGrid').innerHTML = '';
+            document.getElementById('convertBtn').disabled = true;
+            document.getElementById('progressContainer').style.display = 'none';
         }
-        
-        function showProgress() {
-            document.getElementById('progressBar').style.display = 'block';
-        }
-        
-        function hideProgress() {
-            document.getElementById('progressBar').style.display = 'none';
-        }
-        
-        function updateProgress(percent) {
-            document.getElementById('progressFill').style.width = percent + '%';
-        }
-        
+
+        // Convert to PDF function
         async function convertToPDF() {
-            if (selectedFiles.length === 0) return;
+            const files = document.getElementById('fileInput').files;
+            const pageSize = document.getElementById('pageSize').value;
+            const orientation = document.getElementById('orientation').value;
+            const quality = parseFloat(document.getElementById('quality').value);
+            const pdfName = document.getElementById('pdfName').value || 'my-images';
             
+            if (files.length === 0) {
+                alert('กรุณาเลือกไฟล์รูปภาพก่อน');
+                return;
+            }
+
+            // Show progress bar
+            const progressContainer = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
             const convertBtn = document.getElementById('convertBtn');
-            convertBtn.disabled = true;
-            convertBtn.innerHTML = '⏳ กำลังแปลง...';
             
-            showProgress();
+            progressContainer.style.display = 'block';
+            convertBtn.disabled = true;
             
             try {
+                // Initialize jsPDF
                 const { jsPDF } = window.jspdf;
-                const pageSize = document.getElementById('pageSize').value;
-                const orientation = document.getElementById('orientation').value;
-                const quality = parseFloat(document.getElementById('quality').value);
-                const pdfName = document.getElementById('pdfName').value || 'my-images';
+                
+                // Set page dimensions based on size and orientation
+                const pageSizes = {
+                    'a4': [210, 297],
+                    'a3': [297, 420],
+                    'letter': [216, 279],
+                    'legal': [216, 356]
+                };
+                
+                let [width, height] = pageSizes[pageSize];
+                if (orientation === 'landscape') {
+                    [width, height] = [height, width];
+                }
                 
                 const pdf = new jsPDF({
                     orientation: orientation,
                     unit: 'mm',
                     format: pageSize
                 });
-                
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const margin = 10;
-                const availableWidth = pageWidth - (margin * 2);
-                const availableHeight = pageHeight - (margin * 2);
-                
-                for (let i = 0; i < selectedFiles.length; i++) {
-                    const fileObj = selectedFiles[i];
+
+                // Process each image
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
                     
                     // Update progress
-                    const progress = ((i + 1) / selectedFiles.length) * 100;
-                    updateProgress(progress);
+                    const progress = ((i + 1) / files.length) * 90; // 90% for processing, 10% for download
+                    progressFill.style.width = progress + '%';
+                    progressText.textContent = Math.round(progress) + '%';
                     
-                    // Add new page for each image (except first)
-                    if (i > 0) {
-                        pdf.addPage();
-                    }
-                    
-                    try {
-                        const imageData = await getImageData(fileObj.file, quality);
-                        const img = new Image();
+                    if (file.type.startsWith('image/')) {
+                        // Convert file to base64
+                        const base64 = await fileToBase64(file);
                         
-                        await new Promise((resolve, reject) => {
-                            img.onload = () => {
-                                try {
-                                    const imgWidth = img.width;
-                                    const imgHeight = img.height;
-                                    const imgRatio = imgWidth / imgHeight;
-                                    const pageRatio = availableWidth / availableHeight;
-                                    
-                                    let finalWidth, finalHeight;
-                                    
-                                    if (imgRatio > pageRatio) {
-                                        // Image is wider relative to page
-                                        finalWidth = availableWidth;
-                                        finalHeight = availableWidth / imgRatio;
-                                    } else {
-                                        // Image is taller relative to page
-                                        finalHeight = availableHeight;
-                                        finalWidth = availableHeight * imgRatio;
-                                    }
-                                    
-                                    const x = margin + (availableWidth - finalWidth) / 2;
-                                    const y = margin + (availableHeight - finalHeight) / 2;
-                                    
-                                    pdf.addImage(imageData, 'JPEG', x, y, finalWidth, finalHeight);
-                                    resolve();
-                                } catch (error) {
-                                    reject(error);
-                                }
-                            };
-                            img.onerror = reject;
-                            img.src = imageData;
+                        // Create image element to get dimensions
+                        const img = new Image();
+                        await new Promise((resolve) => {
+                            img.onload = resolve;
+                            img.src = base64;
                         });
                         
-                    } catch (error) {
-                        console.error('Error processing image:', error);
+                        // Calculate image dimensions to fit page
+                        const imgWidth = img.width;
+                        const imgHeight = img.height;
+                        const ratio = Math.min((width - 20) / imgWidth, (height - 20) / imgHeight);
+                        
+                        const finalWidth = imgWidth * ratio;
+                        const finalHeight = imgHeight * ratio;
+                        
+                        // Center the image on page
+                        const x = (width - finalWidth) / 2;
+                        const y = (height - finalHeight) / 2;
+                        
+                        // Add new page for each image (except first)
+                        if (i > 0) {
+                            pdf.addPage();
+                        }
+                        
+                        // Add image to PDF
+                        pdf.addImage(base64, 'JPEG', x, y, finalWidth, finalHeight, '', 'MEDIUM');
+                        
+                        // Small delay to prevent browser freezing
+                        await new Promise(resolve => setTimeout(resolve, 100));
                     }
-                    
-                    // Small delay to prevent browser freezing
-                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
                 
-                // Save PDF
+                // Final progress update
+                progressFill.style.width = '100%';
+                progressText.textContent = '100%';
+                
+                // Download the PDF
+                await new Promise(resolve => setTimeout(resolve, 300));
                 pdf.save(`${pdfName}.pdf`);
                 
-                // Show success message
-                convertBtn.innerHTML = '✅ แปลงสำเร็จ!';
+                // Success message
                 setTimeout(() => {
-                    convertBtn.innerHTML = '📄 แปลงเป็น PDF';
+                    alert(`✅ แปลงและดาวน์โหลดสำเร็จ!\n\nไฟล์: ${pdfName}.pdf\nจำนวนหน้า: ${files.length}\nขนาด: ${pageSize.toUpperCase()}\nการจัดวาง: ${orientation === 'portrait' ? 'แนวตั้ง' : 'แนวนอน'}`);
+                    
+                    // Reset progress bar
+                    progressContainer.style.display = 'none';
+                    progressFill.style.width = '0%';
+                    progressText.textContent = '0%';
                     convertBtn.disabled = false;
-                }, 2000);
+                }, 500);
                 
             } catch (error) {
-                console.error('Error creating PDF:', error);
-                convertBtn.innerHTML = '❌ เกิดข้อผิดพลาด';
-                setTimeout(() => {
-                    convertBtn.innerHTML = '📄 แปลงເป็น PDF';
-                    convertBtn.disabled = false;
-                }, 2000);
+                console.error('Error converting to PDF:', error);
+                alert('เกิดข้อผิดพลาดในการแปลงไฟล์ กรุณาลองใหม่อีกครั้ง');
+                
+                // Reset progress bar on error
+                progressContainer.style.display = 'none';
+                progressFill.style.width = '0%';
+                progressText.textContent = '0%';
+                convertBtn.disabled = false;
             }
-            
-            hideProgress();
         }
-        
-        function getImageData(file, quality) {
+
+        // Helper function to convert file to base64
+        function fileToBase64(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        
-                        ctx.drawImage(img, 0, 0);
-                        
-                        const dataURL = canvas.toDataURL('image/jpeg', quality);
-                        resolve(dataURL);
-                    };
-                    img.onerror = reject;
-                    img.src = e.target.result;
-                };
+                reader.onload = () => resolve(reader.result);
                 reader.onerror = reject;
                 reader.readAsDataURL(file);
             });
         }
+
+        // Handle drag and drop
+        const uploadArea = document.querySelector('.upload-area');
+        
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#4f46e5';
+            this.style.background = '#f0f9ff';
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#ccc';
+            this.style.background = '#f9fafb';
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#ccc';
+            this.style.background = '#f9fafb';
+            
+            const files = e.dataTransfer.files;
+            document.getElementById('fileInput').files = files;
+            
+            // Trigger change event
+            const event = new Event('change', { bubbles: true });
+            document.getElementById('fileInput').dispatchEvent(event);
+        });
