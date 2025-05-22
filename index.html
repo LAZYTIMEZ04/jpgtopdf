@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แปลงรูปภาพเป็น PDF</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖼️ แปลงรูปภาพเป็น PDF</h1>
+            <p>อัพโหลดรูปภาพหลายรูปและแปลงเป็น PDF ได้ง่ายๆ</p>
+        </div>
+        
+        <div class="content">
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">คลิกเพื่อเลือกรูปภาพ หรือลากไฟล์มาวางที่นี่</div>
+                <div class="upload-subtext">รองรับไฟล์ JPG, PNG, GIF, WebP</div>
+            </div>
+            
+            <input type="file" id="fileInput" multiple accept="image/*">
+            
+            <div class="file-count" id="fileCount"></div>
+            
+            <div class="preview-grid" id="previewGrid"></div>
+            
+            <div class="settings">
+                <h3>⚙️ การตั้งค่า PDF</h3>
+                <div class="setting-group">
+                    <label>ขนาดกระดาษ:</label>
+                    <select id="pageSize">
+                        <option value="a4">A4</option>
+                        <option value="a3">A3</option>
+                        <option value="letter">Letter</option>
+                        <option value="legal">Legal</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>การจัดวาง:</label>
+                    <select id="orientation">
+                        <option value="portrait">แนวตั้ง</option>
+                        <option value="landscape">แนวนอน</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>คุณภาพรูปภาพ:</label>
+                    <select id="quality">
+                        <option value="0.7">ปานกลาง (ไฟล์เล็ก)</option>
+                        <option value="0.9" selected>สูง (แนะนำ)</option>
+                        <option value="1.0">สูงสุด (ไฟล์ใหญ่)</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>ชื่อไฟล์ PDF:</label>
+                    <input type="text" id="pdfName" placeholder="my-images" value="my-images">
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn" onclick="clearAll()">
+                    🗑️ ลบทั้งหมด
+                </button>
+                <button class="btn" onclick="convertToPDF()" id="convertBtn" disabled>
+                    📄 แปลงเป็น PDF
+                </button>
+            </div>
+            
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
